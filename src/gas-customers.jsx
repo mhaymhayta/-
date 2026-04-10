@@ -90,8 +90,16 @@ export default function GasApp() {
     if (!apiReady) { if (isFirst) setLoading(false); return; }
     apiFetch({ action: "all" })
       .then(data => {
-        if (data.tiers && data.tiers.length > 0) setTiers(data.tiers);
-        else setTiers(initTiers);
+        if (data.tiers && data.tiers.length > 0) {
+          // แปลง prices key จาก string เป็น number
+          const fixedTiers = data.tiers.map(t => ({
+            ...t,
+            prices: Object.fromEntries(
+              Object.entries(t.prices || {}).map(([k,v]) => [parseFloat(k), Number(v)])
+            )
+          }));
+          setTiers(fixedTiers);
+        }
         if (data.customers) setCustomers(data.customers);
         if (isFirst) setPriceLog(l => [...l, { date:thaiToday(), note:"โหลดข้อมูลจาก Google Sheets" }]);
       })
