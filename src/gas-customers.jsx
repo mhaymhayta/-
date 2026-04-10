@@ -86,12 +86,14 @@ export default function GasApp() {
       .finally(() => { if (isFirst) setLoading(false); });
   }
 
-  // โหลดครั้งแรก + auto-refresh ทุก 5 นาที
+  // โหลดครั้งแรก + auto-refresh ทุก 30 วินาที เฉพาะตอนไม่ได้พิมพ์
   useEffect(() => {
     loadData(true);
-    const interval = setInterval(() => loadData(false), 30 * 1000);
+    const interval = setInterval(() => {
+      if (!search) loadData(false);
+    }, 30 * 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [search]);
 
   // บันทึกลูกค้าลง Sheets
   async function syncCustomers(newCustomers) {
