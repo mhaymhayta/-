@@ -102,7 +102,7 @@ export default function GasApp() {
   // โหลดครั้งแรก + auto-refresh ทุก 5 นาที
   useEffect(() => {
     loadData(true);
-    const interval = setInterval(() => loadData(false), 5 * 60 * 1000);
+    const interval = setInterval(() => loadData(false), 30 * 1000);
     return () => clearInterval(interval);
   }, []);
 
