@@ -15,46 +15,25 @@ const initTiers = [
 ];
 
 // API URL — ใส่ URL ที่ได้จาก Apps Script Deploy ตรงนี้
-const API_URL = "https://script.google.com/macros/s/AKfycbxSJuxnqy7vbi7cMaRF-Dy2aHgkOHWTYZS93x5sAzG2cwc55pbRi3WOO1NbhpEoPf8O/exec";
+const API_URL = "/api/proxy";
 
-// JSONP helper
-function jsonp(url) {
-  return new Promise((resolve, reject) => {
-    const cbName = "cb_" + Date.now() + "_" + Math.random().toString(36).slice(2);
-    const script = document.createElement("script");
-    let done = false;
-
-    window[cbName] = (json) => {
-      if (done) return;
-      done = true;
-      delete window[cbName];
-      if (script.parentNode) script.parentNode.removeChild(script);
-      if (json.ok) resolve(json.data);
-      else reject(new Error(json.error));
-    };
-
-    script.onerror = () => {
-      if (done) return;
-      done = true;
-      delete window[cbName];
-      if (script.parentNode) script.parentNode.removeChild(script);
-      reject(new Error("Network error"));
-    };
-
-    script.src = url + "&callback=" + cbName;
-    document.body.appendChild(script);
-  });
-}
-
-function apiFetch(params) {
+async function apiFetch(params) {
   const url = API_URL + "?" + new URLSearchParams(params);
-  return jsonp(url);
+  const res = await fetch(url);
+  const json = await res.json();
+  if (!json.ok) throw new Error(json.error);
+  return json.data;
 }
 
-function apiPost(body) {
-  const payload = encodeURIComponent(JSON.stringify(body));
-  const url = API_URL + "?method=POST&payload=" + payload;
-  return jsonp(url);
+async function apiPost(body) {
+  const res = await fetch(API_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const json = await res.json();
+  if (!json.ok) throw new Error(json.error);
+  return json.data;
 }
 
 
