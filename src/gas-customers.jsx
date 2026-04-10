@@ -86,22 +86,22 @@ export default function GasApp() {
       .finally(() => { if (isFirst) setLoading(false); });
   }
 
-  // โหลดครั้งแรก + auto-refresh ทุก 30 วินาที เฉพาะตอนไม่ได้พิมพ์
+  // โหลดครั้งแรก + auto-refresh ทุก 30 วินาที เฉพาะตอนไม่ได้พิมพ์และไม่ได้ save
   useEffect(() => {
     loadData(true);
     const interval = setInterval(() => {
-      if (!search) loadData(false);
+      if (!search && !saving) loadData(false);
     }, 30 * 1000);
     return () => clearInterval(interval);
-  }, [search]);
+  }, [search, saving]);
 
-  // บันทึกลูกค้าลง Sheets
+  // บันทึกลูกค้าลง Sheets (background — ไม่บล็อก UI)
   async function syncCustomers(newCustomers) {
     if (!apiReady) return;
     setSaving(true);
-    try { await apiPost({ action:"saveCustomers", data:newCustomers }); }
-    catch(e) { console.error("Sync error:", e); }
-    finally { setSaving(false); }
+    apiPost({ action:"saveCustomers", data:newCustomers })
+      .catch(e => console.error("Sync error:", e))
+      .finally(() => setSaving(false));
   }
 
   // บันทึก Tier ลง Sheets
