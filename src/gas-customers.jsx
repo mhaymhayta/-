@@ -95,7 +95,25 @@ export default function GasApp() {
     return () => clearInterval(interval);
   }, [search, saving]);
 
-  // บันทึกลูกค้าลง Sheets (background — ไม่บล็อก UI)
+  // อัพเดตลูกค้าแค่ 1 ราย (เร็วกว่าส่งทั้งหมด)
+  async function syncOneCustomer(customer) {
+    if (!apiReady) return;
+    setSaving(true);
+    apiPost({ action:"updateOne", data:customer })
+      .catch(e => console.error("Sync error:", e))
+      .finally(() => setSaving(false));
+  }
+
+  // ลบลูกค้า 1 ราย
+  async function syncDeleteCustomer(customerId) {
+    if (!apiReady) return;
+    setSaving(true);
+    apiPost({ action:"deleteOne", data:customerId })
+      .catch(e => console.error("Sync error:", e))
+      .finally(() => setSaving(false));
+  }
+
+  // บันทึกลูกค้าทั้งหมด (ใช้ตอน import)
   async function syncCustomers(newCustomers) {
     if (!apiReady) return;
     setSaving(true);
@@ -127,18 +145,16 @@ export default function GasApp() {
   function openEdit(c) { setForm({...c, tanks:c.tanks.map(t=>({...t}))}); setEditId(c.id); setShowForm(true); }
   function saveForm()  {
     if (!form.name.trim()) return;
-    let updated;
-    if (editId) updated = customers.map(c => c.id===editId ? form : c);
-    else        updated = [...customers, {...form, id:nextId()}];
-    setCustomers(updated);
-    syncCustomers(updated);
+    const savedForm = editId ? form : {...form, id:nextId()};
+    if (editId) setCustomers(cs => cs.map(c => c.id===editId ? savedForm : c));
+    else        setCustomers(cs => [...cs, savedForm]);
+    syncOneCustomer(savedForm);
     setShowForm(false);
   }
   function delCust(id) {
     if(confirm("ลบลูกค้ารายนี้?")) {
-      const updated = customers.filter(c => c.id!==id);
-      setCustomers(updated);
-      syncCustomers(updated);
+      setCustomers(cs => cs.filter(c => c.id!==id));
+      syncDeleteCustomer(id);
     }
   }
   function addTank()   { setForm(f => ({...f, tanks:[...f.tanks, {brand:"ปตท", size:15}]})); }
