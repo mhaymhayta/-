@@ -151,6 +151,12 @@ export default function GasApp() {
     setPriceLog(l => [...l, {date:thaiToday(), note:"อัพเดต Tier ราคา"}]);
     setShowTierMgr(false);
   }
+  function addTierRow() {
+    const used = editTiers.map(t => t.id);
+    const newId = "ABCDEFGHIJ".split("").find(x => !used.includes(x)) || String(Date.now());
+    setEditTiers(ts => [...ts, {id:newId, name:"Tier ใหม่", color:"#7f8c8d", prices:{4:0,7:0,8:0,11.5:0,15:0,48:0}}]);
+  }
+  function removeTierRow(i) { setEditTiers(ts => ts.filter((_,idx) => idx!==i)); }
   function adjustTier(ti, delta) {
     setEditTiers(ts => ts.map((t,i) => i!==ti ? t : {
       ...t, prices: Object.fromEntries(SIZES.map(s => [s, (t.prices[s]||0)+delta]))
@@ -452,6 +458,11 @@ export default function GasApp() {
                         </div>
                       ))}
                     </div>
+                    <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6}}>
+                      {editTiers.length > 1 && (
+                        <button onClick={()=>removeTierRow(editTiers.indexOf(tier))} style={{padding:"4px 10px", borderRadius:6, border:"none", background:"#fdedec", color:"#c0392b", cursor:"pointer", fontFamily:"inherit", fontSize:12, fontWeight:700}}>ลบ Tier นี้</button>
+                      )}
+                    </div>
                     <div style={{display:"flex", gap:5, alignItems:"center", flexWrap:"wrap"}}>
                       <span style={{fontSize:12, color:"#888", fontWeight:600}}>ปรับทั้ง Tier:</span>
                       {[-20,-10,-5,+5,+10,+20].map(d=>(
@@ -464,6 +475,7 @@ export default function GasApp() {
                     </div>
                   </div>
                 ))}
+                <button onClick={addTierRow} style={{padding:"7px 16px", borderRadius:8, border:"1px dashed #1b4332", background:"none", color:"#1b4332", cursor:"pointer", fontFamily:"inherit", fontSize:13, fontWeight:700, marginBottom:12}}>+ เพิ่ม Tier ใหม่</button>
                 <div style={{display:"flex", gap:8}}>
                   <button onClick={saveTiers} style={{flex:1, padding:10, borderRadius:8, border:"none", background:"#e94560", color:"white", fontFamily:"inherit", fontSize:14, fontWeight:700, cursor:"pointer"}}>บันทึก</button>
                   <button onClick={()=>setShowTierMgr(false)} style={{padding:"10px 18px", borderRadius:8, border:"1px solid #dde", background:"white", fontFamily:"inherit", fontSize:14, cursor:"pointer"}}>ยกเลิก</button>
