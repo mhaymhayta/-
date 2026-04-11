@@ -135,11 +135,14 @@ export default function GasApp() {
   const getTier  = (id) => tiers.find(t => t.id===id) || tiers[0];
   const tkPrice  = (tierId, size) => getTier(tierId).prices[size] || 0;
 
-  const filtered = useMemo(() => customers.filter(c =>
-    (c.name.includes(search) || (c.phone||"").includes(search) || (c.note||"").includes(search)) &&
-    (filterType==="ทั้งหมด" || c.type===filterType) &&
-    (filterTier==="ทั้งหมด" || c.tierId===filterTier)
-  ), [customers, search, filterType, filterTier]);
+  const filtered = useMemo(() => customers
+    .filter(c =>
+      (c.name.includes(search) || (c.phone||"").includes(search) || (c.note||"").includes(search)) &&
+      (filterType==="ทั้งหมด" || c.type===filterType) &&
+      (filterTier==="ทั้งหมด" || c.tierId===filterTier)
+    )
+    .sort((a, b) => (a.name||"").localeCompare(b.name||"", "th"))
+  , [customers, search, filterType, filterTier]);
 
   function openAdd()   { setForm(newCust(nextId())); setEditId(null); setShowForm(true); }
   function openEdit(c) { setForm({...c, tanks:c.tanks.map(t=>({...t}))}); setEditId(c.id); setShowForm(true); }
