@@ -4,7 +4,23 @@ export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Content-Type", "text/plain; charset=utf-8");
 
-  let name = (req.query.name || "").trim();
+  // รับชื่อจากทั้ง path, query string และ POST body
+  let name = "";
+  
+  if (req.method === "POST") {
+    const body = req.body || {};
+    name = (body.name || body.q || "").trim();
+  }
+  
+  if (!name) {
+    name = (req.query.name || req.query.q || "").trim();
+  }
+  
+  // path parameter
+  if (!name) {
+    name = (req.query.name || "").trim();
+  }
+
   try { name = decodeURIComponent(name); } catch(e) {}
   name = name.toLowerCase();
 
