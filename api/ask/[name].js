@@ -1,26 +1,34 @@
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxSJuxnqy7vbi7cMaRF-Dy2aHgkOHWTYZS93x5sAzG2cwc55pbRi3WOO1NbhpEoPf8O/exec";
 
+// Cache ข้อมูลไว้ในหน่วยความจำ
+let cache = null;
+let cacheTime = 0;
+const CACHE_TTL = 5 * 60 * 1000; // 5 นาที
+
+async function getData() {
+  const now = Date.now();
+  if (cache && (now - cacheTime) < CACHE_TTL) return cache;
+  
+  const [custRes, tierRes] = await Promise.all([
+    fetch(`${APPS_SCRIPT_URL}?action=customers`),
+    fetch(`${APPS_SCRIPT_URL}?action=tiers`)
+  ]);
+  const custData = await custRes.json();
+  const tierData = await tierRes.json();
+  
+  cache = {
+    customers: custData.data || [],
+    tiers: tierData.data || []
+  };
+  cacheTime = now;
+  return cache;
+}
+
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Content-Type", "text/plain; charset=utf-8");
 
-  // รับชื่อจากทั้ง path, query string และ POST body
-  let name = "";
-  
-  if (req.method === "POST") {
-    const body = req.body || {};
-    name = (body.name || body.q || "").trim();
-  }
-  
-  if (!name) {
-    name = (req.query.name || req.query.q || "").trim();
-  }
-  
-  // path parameter
-  if (!name) {
-    name = (req.query.name || "").trim();
-  }
-
+  let name = (req.query.name || "").trim();
   try { name = decodeURIComponent(name); } catch(e) {}
   name = name.toLowerCase();
 
@@ -30,15 +38,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const [custRes, tierRes] = await Promise.all([
-      fetch(`${APPS_SCRIPT_URL}?action=customers`),
-      fetch(`${APPS_SCRIPT_URL}?action=tiers`)
-    ]);
-    const custData = await custRes.json();
-    const tierData = await tierRes.json();
-
-    const customers = custData.data || [];
-    const tiers = tierData.data || [];
+    const { customers, tiers } = await getData();
 
     const found = customers.find(c => {
       const n = (c.name || "").toLowerCase();
