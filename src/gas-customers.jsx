@@ -86,9 +86,13 @@ export default function GasApp() {
       .finally(() => { if (isFirst) setLoading(false); });
   }
 
-  // โหลดครั้งแรก + auto-refresh ทุก 30 วินาที เฉพาะตอนไม่ได้พิมพ์และไม่ได้ save
+  // โหลดครั้งแรก (รันครั้งเดียวตอนเปิดแอป)
   useEffect(() => {
     loadData(true);
+  }, []);
+
+  // auto-refresh ทุก 30 วินาที เฉพาะตอนไม่ได้พิมพ์และไม่ได้ save
+  useEffect(() => {
     const interval = setInterval(() => {
       if (!search && !saving) loadData(false);
     }, 30 * 1000);
