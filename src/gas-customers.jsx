@@ -141,7 +141,7 @@ export default function GasApp() {
 
   const filtered = useMemo(() => customers
     .filter(c =>
-      (c.name.includes(search) || (c.phone||"").includes(search) || (c.note||"").includes(search)) &&
+      (String(c.name||"").includes(search) || String(c.phone||"").includes(search) || String(c.note||"").includes(search)) &&
       (filterType==="ทั้งหมด" || c.type===filterType) &&
       (filterTier==="ทั้งหมด" || c.tierId===filterTier)
     )
