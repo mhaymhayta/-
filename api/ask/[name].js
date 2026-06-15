@@ -54,8 +54,18 @@ export default async function handler(req, res) {
     const tier = tiers.find(t => t.id === found.tierId) || {};
     const prices = tier.prices || {};
 
-    const priceLines = Object.entries(prices)
-      .filter(([, v]) => Number(v) > 0)
+    // เอาเฉพาะขนาดถังที่ลูกค้ารายนี้ใช้จริง (จาก tanks)
+    const ownedSizes = [...new Set((found.tanks || []).map(t => Number(t.size)))];
+
+    let entries = Object.entries(prices)
+      .filter(([k, v]) => ownedSizes.includes(Number(k)) && Number(v) > 0);
+
+    // ถ้าไม่มี tanks ระบุไว้ ให้ fallback กลับไปอ่านทุกขนาดที่มีราคา
+    if (entries.length === 0) {
+      entries = Object.entries(prices).filter(([, v]) => Number(v) > 0);
+    }
+
+    const priceLines = entries
       .sort(([a], [b]) => Number(a) - Number(b))
       .map(([k, v]) => k + " กิโลกรัม ราคา " + v + " บาท")
       .join(" ");
