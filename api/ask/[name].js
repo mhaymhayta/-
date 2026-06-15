@@ -24,6 +24,11 @@ async function getData() {
   return cache;
 }
 
+// ตัดสระและวรรณยุกต์ออก เหลือแค่พยัญชนะ เพื่อช่วยจับคู่คำที่สะกด/พูดต่างกันเล็กน้อย
+function consonantSkeleton(s) {
+  return (s || "").replace(/[\u0E30-\u0E3A\u0E40-\u0E45\u0E47-\u0E4E]/g, "");
+}
+
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Content-Type", "text/plain; charset=utf-8");
@@ -40,10 +45,20 @@ export default async function handler(req, res) {
   try {
     const { customers, tiers } = await getData();
 
+    const nameNoSpace = name.replace(/\s/g, "");
+    const nameSkel = consonantSkeleton(nameNoSpace);
+
     const found = customers.find(c => {
       const n = (c.name || "").toLowerCase();
-      return n.includes(name) || name.includes(n) ||
-             n.replace(/\s/g,"").includes(name.replace(/\s/g,""));
+      const nNoSpace = n.replace(/\s/g, "");
+      if (n.includes(name) || name.includes(n) || nNoSpace.includes(nameNoSpace)) return true;
+
+      // fuzzy match: เทียบแค่พยัญชนะ (ตัดสระ/วรรณยุกต์ทิ้ง)
+      if (nameSkel.length >= 2) {
+        const nSkel = consonantSkeleton(nNoSpace);
+        if (nSkel.includes(nameSkel) || nameSkel.includes(nSkel)) return true;
+      }
+      return false;
     });
 
     if (!found) {
