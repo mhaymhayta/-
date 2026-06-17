@@ -48,6 +48,17 @@ export default async function handler(req, res) {
   try { name = decodeURIComponent(name); } catch(e) {}
   name = name.toLowerCase();
 
+  // แก้คำที่ Siri มักจับผิด
+  const corrections = {
+    "ก๋วยเดี๋ยว": "ก๋วยเตี๋ยว",
+    "ก๋วยเตียว": "ก๋วยเตี๋ยว",
+    "กวยเตียว": "ก๋วยเตี๋ยว",
+    "กวยเดียว": "ก๋วยเตี๋ยว",
+    "ครัวนางทราย": "ครัวนางทราย",
+    "จิ้มจุ่ม": "จิ้มจุ่ม",
+  };
+  if (corrections[name]) name = corrections[name];
+
   if (!name) {
     res.status(200).end("กรุณาบอกชื่อร้านด้วยครับ");
     return;
