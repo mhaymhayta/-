@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { customerCoords } from "./customerCoords.js";
 
 const BRANDS = ["ยูนิค", "ปตท", "ออร์คิด", "เวิลด์", "PT", "ถามยี่ห้อ"];
 const SIZES = [4, 7, 8, 11.5, 15, 48];
@@ -322,8 +323,11 @@ export default function GasApp() {
                       </div>
                     )}
                     <div style={{display:"flex", gap:7, flexWrap:"wrap"}}>
-                      {c.mapUrl && <a href={c.mapUrl} target="_blank" rel="noopener noreferrer"
-                        style={{padding:"6px 12px", borderRadius:8, background:"#2980b9", color:"white", fontSize:12, fontWeight:700, textDecoration:"none"}}>📍 แผนที่</a>}
+                      {(c.mapUrl || customerCoords[c.name]) && (
+                        <a href={c.mapUrl || `https://www.google.com/maps?q=${customerCoords[c.name]?.lat},${customerCoords[c.name]?.lng}`}
+                          target="_blank" rel="noopener noreferrer"
+                          style={{padding:"6px 12px", borderRadius:8, background:"#2980b9", color:"white", fontSize:12, fontWeight:700, textDecoration:"none"}}>📍 แผนที่</a>
+                      )}
                       <button onClick={()=>openEdit(c)} style={{padding:"6px 12px", borderRadius:8, border:"none", background:"#fdf2e9", color:"#d35400", cursor:"pointer", fontFamily:"inherit", fontSize:12, fontWeight:700}}>✏️ แก้ไข</button>
                       <button onClick={()=>delCust(c.id)} style={{padding:"6px 12px", borderRadius:8, border:"none", background:"#fdedec", color:"#c0392b", cursor:"pointer", fontFamily:"inherit", fontSize:12, fontWeight:700}}>🗑️ ลบ</button>
                     </div>
