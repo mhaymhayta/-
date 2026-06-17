@@ -1,32 +1,43 @@
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxSJuxnqy7vbi7cMaRF-Dy2aHgkOHWTYZS93x5sAzG2cwc55pbRi3WOO1NbhpEoPf8O/exec";
 
-// Cache ข้อมูลไว้ในหน่วยความจำ
 let cache = null;
 let cacheTime = 0;
-const CACHE_TTL = 5 * 60 * 1000; // 5 นาที
+const CACHE_TTL = 5 * 60 * 1000;
 
 async function getData() {
   const now = Date.now();
   if (cache && (now - cacheTime) < CACHE_TTL) return cache;
-  
   const [custRes, tierRes] = await Promise.all([
     fetch(`${APPS_SCRIPT_URL}?action=customers`),
     fetch(`${APPS_SCRIPT_URL}?action=tiers`)
   ]);
   const custData = await custRes.json();
   const tierData = await tierRes.json();
-  
-  cache = {
-    customers: custData.data || [],
-    tiers: tierData.data || []
-  };
+  cache = { customers: custData.data || [], tiers: tierData.data || [] };
   cacheTime = now;
   return cache;
 }
 
-// ตัดสระและวรรณยุกต์ออก เหลือแค่พยัญชนะ เพื่อช่วยจับคู่คำที่สะกด/พูดต่างกันเล็กน้อย
 function consonantSkeleton(s) {
   return (s || "").replace(/[\u0E30-\u0E3A\u0E40-\u0E45\u0E47-\u0E4E]/g, "");
+}
+
+function getPriceText(customer, tiers) {
+  const tier = tiers.find(t => t.id === customer.tierId) || {};
+  const prices = tier.prices || {};
+  const ownedSizes = [...new Set((customer.tanks || []).map(t => Number(t.size)))];
+  
+  let entries = Object.entries(prices)
+    .filter(([k, v]) => ownedSizes.includes(Number(k)) && Number(v) > 0);
+  
+  if (entries.length === 0) {
+    entries = Object.entries(prices).filter(([, v]) => Number(v) > 0);
+  }
+  
+  return entries
+    .sort(([a], [b]) => Number(a) - Number(b))
+    .map(([k, v]) => `${k} กิโลกรัม ราคา ${v} บาท`)
+    .join(" ");
 }
 
 export default async function handler(req, res) {
@@ -48,12 +59,27 @@ export default async function handler(req, res) {
     const nameNoSpace = name.replace(/\s/g, "");
     const nameSkel = consonantSkeleton(nameNoSpace);
 
-    const found = customers.find(c => {
+    // เช็คว่ามีร้านที่ตรงกันเป๊ะมั้ย (exact match)
+    const exactMatch = customers.find(c => {
       const n = (c.name || "").toLowerCase();
       const nNoSpace = n.replace(/\s/g, "");
-      if (n.includes(name) || name.includes(n) || nNoSpace.includes(nameNoSpace)) return true;
+      return n === name || nNoSpace === nameNoSpace;
+    });
 
-      // fuzzy match: เทียบแค่พยัญชนะ (ตัดสระ/วรรณยุกต์ทิ้ง)
+    // ถ้าตรงเป๊ะ → ใช้ร้านนั้นเลย ไม่ต้องหาอื่น
+    if (exactMatch) {
+      const priceText = getPriceText(exactMatch, tiers);
+      const answer = priceText
+        ? `${exactMatch.name} ราคาแก๊ส ${priceText}`
+        : `${exactMatch.name} ยังไม่ได้ตั้งราคาครับ`;
+      res.status(200).end(answer);
+      return;
+    }
+
+    const found = customers.filter(c => {
+      const n = (c.name || "").toLowerCase();
+      const nNoSpace = n.replace(/\s/g, "");
+      if (n.includes(name) || nNoSpace.includes(nameNoSpace)) return true;
       if (nameSkel.length >= 2) {
         const nSkel = consonantSkeleton(nNoSpace);
         if (nSkel.includes(nameSkel) || nameSkel.includes(nSkel)) return true;
@@ -61,34 +87,30 @@ export default async function handler(req, res) {
       return false;
     });
 
-    if (!found) {
+    if (found.length === 0) {
       res.status(200).end("ไม่พบลูกค้าชื่อ " + name + " ในระบบครับ");
       return;
     }
 
-    const tier = tiers.find(t => t.id === found.tierId) || {};
-    const prices = tier.prices || {};
-
-    // เอาเฉพาะขนาดถังที่ลูกค้ารายนี้ใช้จริง (จาก tanks)
-    const ownedSizes = [...new Set((found.tanks || []).map(t => Number(t.size)))];
-
-    let entries = Object.entries(prices)
-      .filter(([k, v]) => ownedSizes.includes(Number(k)) && Number(v) > 0);
-
-    // ถ้าไม่มี tanks ระบุไว้ ให้ fallback กลับไปอ่านทุกขนาดที่มีราคา
-    if (entries.length === 0) {
-      entries = Object.entries(prices).filter(([, v]) => Number(v) > 0);
+    if (found.length === 1) {
+      const c = found[0];
+      const priceText = getPriceText(c, tiers);
+      const answer = priceText
+        ? `${c.name} ราคาแก๊ส ${priceText}`
+        : `${c.name} ยังไม่ได้ตั้งราคาครับ`;
+      res.status(200).end(answer);
+      return;
     }
 
-    const priceLines = entries
-      .sort(([a], [b]) => Number(a) - Number(b))
-      .map(([k, v]) => k + " กิโลกรัม ราคา " + v + " บาท")
-      .join(" ");
+    // หลายร้าน — อ่านทุกร้าน
+    const lines = found.map((c, i) => {
+      const priceText = getPriceText(c, tiers);
+      return priceText
+        ? `ร้านที่ ${i+1} ${c.name} ราคา ${priceText}`
+        : `ร้านที่ ${i+1} ${c.name} ยังไม่ได้ตั้งราคา`;
+    });
 
-    const answer = priceLines
-      ? found.name + " ราคาแก๊ส " + priceLines
-      : found.name + " ยังไม่ได้ตั้งราคาครับ";
-
+    const answer = `พบ ${found.length} ร้าน ` + lines.join(" ... ");
     res.status(200).end(answer);
 
   } catch (err) {
