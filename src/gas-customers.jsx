@@ -323,10 +323,15 @@ export default function GasApp() {
                       </div>
                     )}
                     <div style={{display:"flex", gap:7, flexWrap:"wrap"}}>
-                      {(c.mapUrl || customerCoords[c.name]) && (
+                      {(c.mapUrl || customerCoords[c.name]) ? (
                         <a href={c.mapUrl || `https://www.google.com/maps?q=${customerCoords[c.name]?.lat},${customerCoords[c.name]?.lng}`}
                           target="_blank" rel="noopener noreferrer"
                           style={{padding:"6px 12px", borderRadius:8, background:"#2980b9", color:"white", fontSize:12, fontWeight:700, textDecoration:"none"}}>📍 แผนที่</a>
+                      ) : (
+                        <button onClick={()=>{
+                          const url = `https://www.google.com/maps/search/${encodeURIComponent(c.name)}`;
+                          window.open(url, "_blank");
+                        }} style={{padding:"6px 12px", borderRadius:8, border:"1px dashed #2980b9", background:"white", color:"#2980b9", fontSize:12, fontWeight:700, cursor:"pointer"}}>+ เพิ่มแผนที่</button>
                       )}
                       <button onClick={()=>openEdit(c)} style={{padding:"6px 12px", borderRadius:8, border:"none", background:"#fdf2e9", color:"#d35400", cursor:"pointer", fontFamily:"inherit", fontSize:12, fontWeight:700}}>✏️ แก้ไข</button>
                       <button onClick={()=>delCust(c.id)} style={{padding:"6px 12px", borderRadius:8, border:"none", background:"#fdedec", color:"#c0392b", cursor:"pointer", fontFamily:"inherit", fontSize:12, fontWeight:700}}>🗑️ ลบ</button>
